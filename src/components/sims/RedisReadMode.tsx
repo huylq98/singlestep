@@ -2,14 +2,15 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 import {
   Stage,
   Node,
-  Arrow,
   Toggle,
   StepButton,
   Legend,
   EventLog,
   colors,
+  motion as motionTokens,
   type LogEntry,
 } from '@site/src/components/sim-kit';
+import { motion } from 'framer-motion';
 
 type Mode = 'master' | 'replica' | 'replica-preferred';
 type Target = 'master' | 'r1' | 'r2';
@@ -79,6 +80,75 @@ export interface RedisReadModeProps {
   autoFireMs?: number;
 }
 
+// ArrowLine renders an SVG line in viewBox (0-100, 0-100) space.
+// The SVG itself is positioned as an absolute overlay that covers the entire
+// grid cell, so coordinates are percentages of the bounding box.
+interface ArrowLineProps {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  active: boolean;
+  label?: string;
+}
+
+function ArrowLine({ fromX, fromY, toX, toY, active, label }: ArrowLineProps) {
+  const stroke = active ? colors.active : colors.idle;
+  const midX = (fromX + toX) / 2;
+  const midY = (fromY + toY) / 2;
+  const markerId = `arrowhead-${active ? 'active' : 'idle'}`;
+
+  return (
+    <>
+      <defs>
+        <marker
+          id={markerId}
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="4"
+          markerHeight="4"
+          orient="auto"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill={stroke} />
+        </marker>
+      </defs>
+      <motion.line
+        x1={fromX}
+        y1={fromY}
+        x2={toX}
+        y2={toY}
+        stroke={stroke}
+        strokeWidth={1.5}
+        markerEnd={`url(#${markerId})`}
+        animate={{ opacity: active ? 1 : 0.35 }}
+        transition={motionTokens.tweenFast}
+      />
+      {active && (
+        <motion.circle
+          r={2.5}
+          fill={colors.active}
+          initial={{ cx: fromX, cy: fromY }}
+          animate={{ cx: toX, cy: toY }}
+          transition={{ duration: 0.6, ease: 'easeInOut' }}
+        />
+      )}
+      {label && (
+        <text
+          x={midX}
+          y={midY - 2}
+          fill={colors.muted}
+          fontSize="6"
+          textAnchor="middle"
+          style={{ pointerEvents: 'none', userSelect: 'none' }}
+        >
+          {label}
+        </text>
+      )}
+    </>
+  );
+}
+
 export function RedisReadMode({
   initialMode = 'master',
   autoFireMs = 1500,
@@ -100,31 +170,95 @@ export function RedisReadMode({
 
   useEffect(() => () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); }, []);
 
-  // Geometry for the arrows layer. Client on the left, backends on the right.
-  const layer = { width: 460, height: 220 };
-  const client  = { x: 60,  y: 110 };
-  const master  = { x: 380, y: 50  };
-  const r1      = { x: 380, y: 130 };
-  const r2      = { x: 380, y: 210 };
+  // ViewBox coordinates (0-100 × 0-100). Client centred on the left, backends stacked on the right.
+  const clientCenter = { x: 20, y: 50 };
+  const masterCenter = { x: 82, y: 20 };
+  const r1Center     = { x: 82, y: 50 };
+  const r2Center     = { x: 82, y: 80 };
 
   return (
     <Stage label="Redis read modes — interactive simulation">
-      <div style={{ position: 'relative', height: layer.height, marginBottom: '0.5rem' }}>
-        <Arrow from={client} to={master} active={state.active === 'master'} width={layer.width} height={layer.height} label="to master" />
-        <Arrow from={client} to={r1}     active={state.active === 'r1'}     width={layer.width} height={layer.height} label="to r1" />
-        <Arrow from={client} to={r2}     active={state.active === 'r2'}     width={layer.width} height={layer.height} label="to r2" />
+      {/*
+       * Layout: two-column grid. Client on the left, servers stacked on the right.
+       * Arrows are drawn in a scalable SVG overlay using viewBox (0-100 × 0-100)
+       * so they scale with the container rather than using fixed pixel coords.
+       */}
+      <div style={{ position: 'relative', minHeight: 260, marginBottom: '0.5rem' }}>
+        {/* Scalable arrow overlay */}
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+          }}
+          aria-hidden="true"
+        >
+          <ArrowLine
+            fromX={clientCenter.x} fromY={clientCenter.y}
+            toX={masterCenter.x}  toY={masterCenter.y}
+            active={state.active === 'master'}
+            label="to master"
+          />
+          <ArrowLine
+            fromX={clientCenter.x} fromY={clientCenter.y}
+            toX={r1Center.x}       toY={r1Center.y}
+            active={state.active === 'r1'}
+            label="to r1"
+          />
+          <ArrowLine
+            fromX={clientCenter.x} fromY={clientCenter.y}
+            toX={r2Center.x}       toY={r2Center.y}
+            active={state.active === 'r2'}
+            label="to r2"
+          />
+        </svg>
 
-        <div style={{ position: 'absolute', left: client.x - 50, top: client.y - 28 }}>
-          <Node label="Client" state="idle" />
-        </div>
-        <div style={{ position: 'absolute', left: master.x - 50, top: master.y - 28 }}>
-          <Node label="Master" state={state.active === 'master' ? 'active' : 'idle'} sublabel="primary" />
-        </div>
-        <div style={{ position: 'absolute', left: r1.x - 50, top: r1.y - 28 }}>
-          <Node label="Replica 1" state={state.active === 'r1' ? 'active' : 'idle'} sublabel="read replica" />
-        </div>
-        <div style={{ position: 'absolute', left: r2.x - 50, top: r2.y - 28 }}>
-          <Node label="Replica 2" state={state.active === 'r2' ? 'active' : 'idle'} sublabel="read replica" />
+        {/* Node grid — sits above the SVG overlay */}
+        <div
+          style={{
+            position: 'relative',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            alignItems: 'center',
+            gap: '0.75rem',
+            minHeight: 260,
+            zIndex: 1,
+          }}
+        >
+          {/* Left column: Client */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <Node label="Client" state="idle" />
+          </div>
+
+          {/* Right column: Master + Replicas stacked */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              alignItems: 'flex-start',
+            }}
+          >
+            <Node
+              label="Master"
+              state={state.active === 'master' ? 'active' : 'idle'}
+              sublabel="primary"
+            />
+            <Node
+              label="Replica 1"
+              state={state.active === 'r1' ? 'active' : 'idle'}
+              sublabel="read replica"
+            />
+            <Node
+              label="Replica 2"
+              state={state.active === 'r2' ? 'active' : 'idle'}
+              sublabel="read replica"
+            />
+          </div>
         </div>
       </div>
 
