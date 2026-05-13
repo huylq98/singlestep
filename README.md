@@ -7,19 +7,19 @@ Single-step through the hard stuff.
 ## Local development
 
 ```bash
-yarn install
-yarn start          # local dev server on :3000
-yarn typecheck      # TypeScript check
-yarn test           # unit tests
-yarn build          # production build
+npm install
+npm start           # local dev server on :3000
+npm run typecheck   # TypeScript check
+npm test            # unit tests
+npm run build       # production build
 ```
 
 ## Authoring
 
 ```bash
-yarn new doc kafka/consumer-rebalancing
-yarn new post that-time-redis-evicted-us
-yarn new sim KafkaPartitions
+npm run new doc kafka/consumer-rebalancing
+npm run new post that-time-redis-evicted-us
+npm run new sim KafkaPartitions
 ```
 
 See `specs/` for design specs and `plans/` for implementation plans.
