@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://huylq98.github.io/singlestep/blog</id>
+    <title>Singlestep</title>
+    <updated>2026-05-13T00:00:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://huylq98.github.io/singlestep/blog"/>
+    <subtitle>Engineering deep dives and interactive simulations.</subtitle>
+    <icon>https://huylq98.github.io/singlestep/img/favicon.ico</icon>
+    <rights>Copyright © 2026 Singlestep.</rights>
+    <entry>
+        <title type="html"><![CDATA[Welcome to Singlestep]]></title>
+        <id>https://huylq98.github.io/singlestep/blog/welcome</id>
+        <link href="https://huylq98.github.io/singlestep/blog/welcome"/>
+        <updated>2026-05-13T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[This is the first post on Singlestep — a personal engineering knowledge base built]]></summary>
+        <content type="html"><![CDATA[<p>This is the first post on Singlestep — a personal engineering knowledge base built
+around interactive simulations.</p>
+<!-- -->
+<p>The first hero demo is <a class="" href="https://huylq98.github.io/singlestep/docs/redis/read-modes">Redis read modes</a>. Toggle between
+master and replica reads and watch where the requests go. It's the kind of thing that
+takes ten minutes to read about and three seconds to understand once you can see it.</p>
+<p>More to come — Kafka consumer rebalancing, cache eviction policies, transaction
+propagation. If a topic confused you the first time you learned it, that's exactly
+the kind of thing that gets a sim here.</p>]]></content>
+        <author>
+            <name>huylq98</name>
+            <uri>https://github.com/huylq98</uri>
+        </author>
+        <category label="meta" term="meta"/>
+    </entry>
+</feed>

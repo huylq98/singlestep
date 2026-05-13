@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksinglestep=self.webpackChunksinglestep||[]).push([["1833"],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Welcome to Singlestep","permalink":"/singlestep/blog/welcome","unlisted":false,"date":"2026-05-13T00:00:00.000Z"}]}')}}]);

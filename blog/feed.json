@@ -1,0 +1,23 @@
+{
+    "version": "https://jsonfeed.org/version/1",
+    "title": "Singlestep",
+    "home_page_url": "https://huylq98.github.io/singlestep/blog",
+    "description": "Engineering deep dives and interactive simulations.",
+    "items": [
+        {
+            "id": "https://huylq98.github.io/singlestep/blog/welcome",
+            "content_html": "<p>This is the first post on Singlestep — a personal engineering knowledge base built\naround interactive simulations.</p>\n<!-- -->\n<p>The first hero demo is <a class=\"\" href=\"https://huylq98.github.io/singlestep/docs/redis/read-modes\">Redis read modes</a>. Toggle between\nmaster and replica reads and watch where the requests go. It's the kind of thing that\ntakes ten minutes to read about and three seconds to understand once you can see it.</p>\n<p>More to come — Kafka consumer rebalancing, cache eviction policies, transaction\npropagation. If a topic confused you the first time you learned it, that's exactly\nthe kind of thing that gets a sim here.</p>",
+            "url": "https://huylq98.github.io/singlestep/blog/welcome",
+            "title": "Welcome to Singlestep",
+            "summary": "This is the first post on Singlestep — a personal engineering knowledge base built",
+            "date_modified": "2026-05-13T00:00:00.000Z",
+            "author": {
+                "name": "huylq98",
+                "url": "https://github.com/huylq98"
+            },
+            "tags": [
+                "meta"
+            ]
+        }
+    ]
+}

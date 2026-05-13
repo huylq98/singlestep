@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksinglestep=self.webpackChunksinglestep||[]).push([["6418"],{6404(e){e.exports=JSON.parse('{"authors":[{"name":"huylq98","title":"Software Engineer","url":"https://github.com/huylq98","key":"you","page":null,"count":1}]}')}}]);

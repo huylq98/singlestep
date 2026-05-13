@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Singlestep</title>
+        <link>https://huylq98.github.io/singlestep/blog</link>
+        <description>Engineering deep dives and interactive simulations.</description>
+        <lastBuildDate>Wed, 13 May 2026 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <copyright>Copyright © 2026 Singlestep.</copyright>
+        <item>
+            <title><![CDATA[Welcome to Singlestep]]></title>
+            <link>https://huylq98.github.io/singlestep/blog/welcome</link>
+            <guid>https://huylq98.github.io/singlestep/blog/welcome</guid>
+            <pubDate>Wed, 13 May 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[This is the first post on Singlestep — a personal engineering knowledge base built]]></description>
+            <content:encoded><![CDATA[<p>This is the first post on Singlestep — a personal engineering knowledge base built
+around interactive simulations.</p>
+<!-- -->
+<p>The first hero demo is <a class="" href="https://huylq98.github.io/singlestep/docs/redis/read-modes">Redis read modes</a>. Toggle between
+master and replica reads and watch where the requests go. It's the kind of thing that
+takes ten minutes to read about and three seconds to understand once you can see it.</p>
+<p>More to come — Kafka consumer rebalancing, cache eviction policies, transaction
+propagation. If a topic confused you the first time you learned it, that's exactly
+the kind of thing that gets a sim here.</p>]]></content:encoded>
+            <category>meta</category>
+        </item>
+    </channel>
+</rss>
