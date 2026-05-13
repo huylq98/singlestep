@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import {
   Stage,
   Node,
@@ -151,6 +151,13 @@ function ArrowLine({ fromX, fromY, toX, toY, active, label }: ArrowLineProps) {
   );
 }
 
+interface NodePositions {
+  client: { x: number; y: number };
+  master: { x: number; y: number };
+  r1: { x: number; y: number };
+  r2: { x: number; y: number };
+}
+
 export function RedisReadMode({
   initialMode = 'master',
   autoFireMs = 1500,
@@ -172,20 +179,70 @@ export function RedisReadMode({
 
   useEffect(() => () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); }, []);
 
-  // ViewBox coordinates (0-100 × 0-100). Client centred on the left, backends stacked on the right.
-  const clientCenter = { x: 20, y: 50 };
-  const masterCenter = { x: 82, y: 20 };
-  const r1Center     = { x: 82, y: 50 };
-  const r2Center     = { x: 82, y: 80 };
+  // Compute arrow endpoints from the actual rendered positions of each node so
+  // arrows always connect App's right edge to each Redis node's left edge,
+  // no matter the viewport width or node label widths.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<HTMLDivElement>(null);
+  const masterRef = useRef<HTMLDivElement>(null);
+  const r1Ref = useRef<HTMLDivElement>(null);
+  const r2Ref = useRef<HTMLDivElement>(null);
+
+  const [positions, setPositions] = useState<NodePositions | null>(null);
+
+  useLayoutEffect(() => {
+    const update = () => {
+      const container = containerRef.current;
+      const app = appRef.current;
+      const master = masterRef.current;
+      const r1 = r1Ref.current;
+      const r2 = r2Ref.current;
+      if (!container || !app || !master || !r1 || !r2) return;
+
+      const c = container.getBoundingClientRect();
+      // Use right edge for the source node, left edge for the targets — this
+      // makes the arrow start where App ends and end where each Redis begins.
+      const rightOf = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return {
+          x: ((r.right - c.left) / c.width) * 100,
+          y: ((r.top + r.bottom) / 2 - c.top) / c.height * 100,
+        };
+      };
+      const leftOf = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return {
+          x: ((r.left - c.left) / c.width) * 100,
+          y: ((r.top + r.bottom) / 2 - c.top) / c.height * 100,
+        };
+      };
+      setPositions({
+        client: rightOf(app),
+        master: leftOf(master),
+        r1: leftOf(r1),
+        r2: leftOf(r2),
+      });
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   return (
     <Stage label="Redis read modes — interactive simulation">
       {/*
-       * Layout: two-column grid. Client on the left, servers stacked on the right.
-       * Arrows are drawn in a scalable SVG overlay using viewBox (0-100 × 0-100)
-       * so they scale with the container rather than using fixed pixel coords.
+       * Layout: two-column grid. App on the left, Redis nodes stacked on the right.
+       * Arrows are drawn in an SVG overlay using viewBox (0-100 × 0-100). Their
+       * endpoints are computed at runtime from the actual node positions, so they
+       * always touch the right edge of App and the left edge of each Redis node.
        */}
-      <div style={{ position: 'relative', minHeight: 260, marginBottom: '0.5rem' }}>
+      <div ref={containerRef} style={{ position: 'relative', minHeight: 260, marginBottom: '0.5rem' }}>
         {/* Scalable arrow overlay */}
         <svg
           viewBox="0 0 100 100"
@@ -199,24 +256,25 @@ export function RedisReadMode({
           }}
           aria-hidden="true"
         >
-          <ArrowLine
-            fromX={clientCenter.x} fromY={clientCenter.y}
-            toX={masterCenter.x}  toY={masterCenter.y}
-            active={state.active === 'master'}
-            label="to master"
-          />
-          <ArrowLine
-            fromX={clientCenter.x} fromY={clientCenter.y}
-            toX={r1Center.x}       toY={r1Center.y}
-            active={state.active === 'r1'}
-            label="to r1"
-          />
-          <ArrowLine
-            fromX={clientCenter.x} fromY={clientCenter.y}
-            toX={r2Center.x}       toY={r2Center.y}
-            active={state.active === 'r2'}
-            label="to r2"
-          />
+          {positions && (
+            <>
+              <ArrowLine
+                fromX={positions.client.x} fromY={positions.client.y}
+                toX={positions.master.x}   toY={positions.master.y}
+                active={state.active === 'master'}
+              />
+              <ArrowLine
+                fromX={positions.client.x} fromY={positions.client.y}
+                toX={positions.r1.x}        toY={positions.r1.y}
+                active={state.active === 'r1'}
+              />
+              <ArrowLine
+                fromX={positions.client.x} fromY={positions.client.y}
+                toX={positions.r2.x}        toY={positions.r2.y}
+                active={state.active === 'r2'}
+              />
+            </>
+          )}
         </svg>
 
         {/* Node grid — sits above the SVG overlay */}
@@ -233,12 +291,14 @@ export function RedisReadMode({
         >
           {/* Left column: App (client) */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Node
-              label="App"
-              state="idle"
-              sublabel="your application"
-              icon={<MonitorIcon />}
-            />
+            <div ref={appRef} style={{ display: 'inline-block' }}>
+              <Node
+                label="App"
+                state="idle"
+                sublabel="your application"
+                icon={<MonitorIcon />}
+              />
+            </div>
           </div>
 
           {/* Right column: Redis Master + Replicas stacked */}
@@ -250,24 +310,30 @@ export function RedisReadMode({
               alignItems: 'flex-start',
             }}
           >
-            <Node
-              label="Redis Master"
-              state={state.active === 'master' ? 'active' : 'idle'}
-              sublabel="primary node · writes"
-              icon={<RedisIcon />}
-            />
-            <Node
-              label="Redis Replica 1"
-              state={state.active === 'r1' ? 'active' : 'idle'}
-              sublabel="read-only node"
-              icon={<RedisIcon />}
-            />
-            <Node
-              label="Redis Replica 2"
-              state={state.active === 'r2' ? 'active' : 'idle'}
-              sublabel="read-only node"
-              icon={<RedisIcon />}
-            />
+            <div ref={masterRef} style={{ display: 'inline-block' }}>
+              <Node
+                label="Redis Master"
+                state={state.active === 'master' ? 'active' : 'idle'}
+                sublabel="primary node · writes"
+                icon={<RedisIcon />}
+              />
+            </div>
+            <div ref={r1Ref} style={{ display: 'inline-block' }}>
+              <Node
+                label="Redis Replica 1"
+                state={state.active === 'r1' ? 'active' : 'idle'}
+                sublabel="read-only node"
+                icon={<RedisIcon />}
+              />
+            </div>
+            <div ref={r2Ref} style={{ display: 'inline-block' }}>
+              <Node
+                label="Redis Replica 2"
+                state={state.active === 'r2' ? 'active' : 'idle'}
+                sublabel="read-only node"
+                icon={<RedisIcon />}
+              />
+            </div>
           </div>
         </div>
       </div>

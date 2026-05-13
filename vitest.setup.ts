@@ -7,3 +7,17 @@ import { vi } from 'vitest';
 // not a global by default, so the drain never happens and fake-timer tests hang.
 // Aliasing `jest` → `vi` restores the expected behaviour.
 Object.defineProperty(globalThis, 'jest', { value: vi, writable: true, configurable: true });
+
+// jsdom does not implement ResizeObserver. Components that use it for
+// responsive layout (e.g., RedisReadMode computing arrow endpoints from
+// rendered node positions) need a stub. A no-op constructor is enough for
+// tests — bounding rects aren't reliable in jsdom anyway, so we don't rely
+// on the callback firing.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  (globalThis as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver = ResizeObserverStub;
+}
