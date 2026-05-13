@@ -10,8 +10,11 @@ export const colors = {
   muted:    'var(--ifm-color-emphasis-600)',
 
   // State
-  idle:     'var(--ifm-color-emphasis-400)',
-  active:   'var(--ifm-color-primary)',
+  // Using fixed hex values for state colors so they stay vivid regardless of
+  // theme. The Docusaurus emphasis-400 token was too pale, making idle nodes
+  // look ghost-like; slate-500 reads clearly in both light and dark mode.
+  idle:     '#64748b',   // slate-500
+  active:   '#2563eb',   // blue-600 — more saturated than --ifm-color-primary default
   success:  '#16a34a',
   warning:  '#d97706',
   failing:  '#dc2626',
