@@ -1,0 +1,37 @@
+---
+title: Redis read modes
+sidebar_position: 1
+---
+
+import { RedisReadMode } from '@site/src/components/sims/RedisReadMode';
+
+# Redis read modes
+
+When you connect a Redis client to a cluster with replicas, you choose where reads go.
+The default — every read to the master — is safe but wastes the replicas. Routing reads
+to replicas trades a small amount of staleness for higher throughput and lower latency.
+
+Try the three modes below. Click **Send GET** a few times, then flip the toggle and
+notice which arrow lights up.
+
+<RedisReadMode initialMode="master" />
+
+## What the modes mean
+
+| Mode                  | Reads go to                              | Writes go to | Staleness window |
+| --------------------- | ---------------------------------------- | ------------ | ---------------- |
+| `master`              | Master only                              | Master       | None             |
+| `replica`             | Round-robin across replicas              | Master       | Replication lag  |
+| `replica-preferred`   | Replicas if available, else master       | Master       | Replication lag  |
+
+## When to use which
+
+- **`master`** — strong-read-after-write requirements. Session tokens, financial state, anything where a stale read is a bug.
+- **`replica`** — read-heavy traffic that tolerates a few milliseconds of staleness. Product catalogs, feeds, leaderboards.
+- **`replica-preferred`** — pragmatic default for most read-heavy services. Reads stay fast under normal conditions and fall back to master if all replicas are unhealthy.
+
+## Try this
+
+1. Set mode to `replica` and turn on auto-fire. Notice that requests alternate between Replica 1 and Replica 2.
+2. Switch mode mid-flight to `master`. The next arrow snaps to the master.
+3. Compare the event log entries — replica reads are tagged green to highlight the trade-off you're making.

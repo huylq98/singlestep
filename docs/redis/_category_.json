@@ -1,0 +1,5 @@
+{
+  "label": "Redis",
+  "position": 1,
+  "link": { "type": "generated-index", "title": "Redis", "description": "Notes and interactive demos for Redis." }
+}
