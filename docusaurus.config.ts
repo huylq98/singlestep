@@ -9,10 +9,10 @@ const config: Config = {
 
   future: { v4: true },
 
-  url: 'https://singlestep.dev',
-  baseUrl: '/',
+  url: 'https://huylq98.github.io',
+  baseUrl: '/singlestep/',
 
-  organizationName: 'PLACEHOLDER-GH-USER',
+  organizationName: 'huylq98',
   projectName: 'singlestep',
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
