@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Docusaurus build artifacts
+build/
+.docusaurus/
+.cache-loader/
+
+# Private drafts (never published, never committed)
+drafts/
+
+# Editor / OS junk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.log
+
+# Env
+.env*
+!.env.example
+
+# Test coverage
+coverage/
