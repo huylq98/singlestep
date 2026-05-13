@@ -21,4 +21,17 @@ describe('<Node>', () => {
     render(<Node label="Master" state="failing" />);
     expect(screen.getByLabelText(/master.*failing/i)).toBeInTheDocument();
   });
+
+  it('renders an icon when provided, marked aria-hidden so screen readers ignore it', () => {
+    render(<Node label="Master" state="idle" icon={<svg data-testid="my-icon" />} />);
+    const iconWrapper = screen.getByTestId('sim-node-icon');
+    expect(iconWrapper).toBeInTheDocument();
+    expect(iconWrapper).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByTestId('my-icon')).toBeInTheDocument();
+  });
+
+  it('does not render the icon wrapper when icon prop is absent', () => {
+    render(<Node label="Master" state="idle" />);
+    expect(screen.queryByTestId('sim-node-icon')).not.toBeInTheDocument();
+  });
 });

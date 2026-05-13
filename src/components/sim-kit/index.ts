@@ -23,3 +23,5 @@ export { EventLog } from './EventLog';
 export type { EventLogProps, LogEntry, LogKind } from './EventLog';
 
 export { colors, motion, radii } from './tokens';
+
+export { DatabaseIcon, MonitorIcon } from './icons';

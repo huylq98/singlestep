@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { colors, motion as motionTokens, radii } from './tokens';
 
@@ -7,6 +8,8 @@ export interface NodeProps {
   label: string;
   state: NodeState;
   sublabel?: string;
+  /** Decorative icon rendered above the label. Will be marked aria-hidden. */
+  icon?: ReactNode;
 }
 
 const stateColor: Record<NodeState, string> = {
@@ -15,7 +18,7 @@ const stateColor: Record<NodeState, string> = {
   failing: colors.failing,
 };
 
-export function Node({ label, state, sublabel }: NodeProps) {
+export function Node({ label, state, sublabel, icon }: NodeProps) {
   return (
     <motion.div
       data-testid="sim-node"
@@ -42,6 +45,19 @@ export function Node({ label, state, sublabel }: NodeProps) {
         fontWeight: 600,
       }}
     >
+      {icon && (
+        <span
+          aria-hidden="true"
+          data-testid="sim-node-icon"
+          style={{
+            display: 'inline-flex',
+            color: stateColor[state],
+            marginBottom: 2,
+          }}
+        >
+          {icon}
+        </span>
+      )}
       <span>{label}</span>
       {sublabel && (
         <span style={{ fontSize: '0.75rem', color: colors.muted, fontWeight: 400 }}>
