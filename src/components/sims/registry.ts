@@ -13,9 +13,9 @@ export interface SimEntry {
 export const sims: SimEntry[] = [
   {
     id: 'redis-read-mode',
-    name: 'Redis read modes',
+    name: 'Redis Replication Lag',
     category: 'Caching',
-    blurb: 'Toggle between master/replica reads and watch traffic re-route in real time.',
+    blurb: "A subtle Claim Check + Kafka bug — Redisson's default ReadMode.SLAVE lets you read stale or missing data. Toggle between SLAVE / MASTER_SLAVE / MASTER and feel the difference.",
     embeddedAt: '/docs/redis/read-modes',
     Component: RedisReadMode as ComponentType<Record<string, unknown>>,
   },

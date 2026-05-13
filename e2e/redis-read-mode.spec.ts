@@ -88,14 +88,14 @@ test.describe('Site smoke tests', () => {
 
   test('docs/redis/read-modes page renders the sim and prose', async ({ page }) => {
     await page.goto('/singlestep/docs/redis/read-modes');
-    await expect(page.getByRole('heading', { name: /redis read modes/i, level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /redis replication lag/i, level: 1 })).toBeVisible();
     await expect(page.getByRole('region', { name: /redis read modes/i })).toBeVisible();
   });
 
   test('/playground lists the Redis sim', async ({ page }) => {
     await page.goto('/singlestep/playground');
     await expect(page.getByRole('heading', { name: /^playground$/i, level: 1 })).toBeVisible();
-    await expect(page.getByRole('link', { name: /redis read modes/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /redis replication lag/i })).toBeVisible();
   });
 
   test('/about page renders', async ({ page }) => {

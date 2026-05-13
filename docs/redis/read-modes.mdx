@@ -1,37 +1,191 @@
 ---
-title: Redis read modes
+title: Redis Replication Lag
 sidebar_position: 1
+description: A subtle Claim Check + Kafka + Redis bug, how to monitor it, and the Redisson ReadMode.MASTER fix.
 ---
 
 import { RedisReadMode } from '@site/src/components/sims/RedisReadMode';
 
-# Redis read modes
+# Redis Replication Lag — Cái bẫy ẩn khiến Event-Driven System đọc nhầm data
 
-When you connect a Redis client to a cluster with replicas, you choose where reads go.
-The default — every read to the master — is safe but wastes the replicas. Routing reads
-to replicas trades a small amount of staleness for higher throughput and lower latency.
+Nếu bạn đang xây dựng một hệ thống Event-Driven và dùng Redis làm data store, bài này có thể giúp bạn tránh được một loại bug khá khó chịu: **hiếm gặp, không reproduce ổn định, nhưng khi xảy ra thì gây lỗi logic thật sự**.
 
-Try the three modes below. Click **Send GET** a few times, then flip the toggle and
-notice which arrow lights up.
+---
 
-<RedisReadMode initialMode="master" />
+## 1. Bối cảnh — Claim Check Pattern và Redis
 
-## What the modes mean
+Trong hệ thống của mình, các service giao tiếp với nhau qua Kafka theo một pattern khá phổ biến gọi là **Claim Check Pattern**.
 
-| Mode                  | Reads go to                              | Writes go to | Staleness window |
-| --------------------- | ---------------------------------------- | ------------ | ---------------- |
-| `master`              | Master only                              | Master       | None             |
-| `replica`             | Round-robin across replicas              | Master       | Replication lag  |
-| `replica-preferred`   | Replicas if available, else master       | Master       | Replication lag  |
+Thay vì nhét toàn bộ payload vào Kafka message (nặng, coupling cao), producer chỉ gửi một **key** — giống như một "claim ticket". Consumer nhận key đó rồi tự đi fetch data từ Redis. Gọn, nhanh, và tách biệt data lifecycle khỏi message lifecycle.
 
-## When to use which
+```
+Producer ──[key]──► Kafka ──[key]──► Consumer ──[fetch(key)]──► Redis
+```
 
-- **`master`** — strong-read-after-write requirements. Session tokens, financial state, anything where a stale read is a bug.
-- **`replica`** — read-heavy traffic that tolerates a few milliseconds of staleness. Product catalogs, feeds, leaderboards.
-- **`replica-preferred`** — pragmatic default for most read-heavy services. Reads stay fast under normal conditions and fall back to master if all replicas are unhealthy.
+Trông rất clean. Vấn đề nằm ở chỗ khác.
 
-## Try this
+---
 
-1. Set mode to `replica` and turn on auto-fire. Notice that requests alternate between Replica 1 and Replica 2.
-2. Switch mode mid-flight to `master`. The next arrow snaps to the master.
-3. Compare the event log entries — replica reads are tagged green to highlight the trade-off you're making.
+## 2. Triệu chứng — Bug hiếm, khó bắt
+
+Thỉnh thoảng (không phải thường xuyên), hệ thống gặp hai kiểu lỗi:
+
+**Kiểu 1 — Key not found:**
+Service A khởi tạo order, write data vào Redis, gửi key sang Kafka. Service B nhận key, fetch Redis → **không thấy bản ghi**.
+
+**Kiểu 2 — Stale data:**
+Service A xử lý xong, cập nhật trạng thái trong Redis. Service B đọc lại để kiểm tra điều kiện → **thấy trạng thái cũ**, dẫn đến validation fail.
+
+Cả hai đều có chung một đặc điểm: **xảy ra rất hiếm, không reproduce được ổn định**. Dễ bị team bỏ qua hoặc nghĩ là network fluke.
+
+---
+
+## 3. Root Cause — Redis Replication Lag
+
+Để hiểu tại sao, cần nhìn vào kiến trúc Redis Cluster.
+
+### Write đi Master, Read đi Slave
+
+Trong Redis Cluster với replication, mỗi shard có một **Master** và một hoặc nhiều **Replica (Slave)**:
+
+```
+        Write
+          │
+          ▼
+       [Master] ──async replicate──► [Replica]
+                                          ▲
+                                        Read (default)
+```
+
+- **Write** luôn đi vào Master — đảm bảo consistency.
+- **Read** mặc định đi vào Replica — để phân tải.
+
+Replication từ Master sang Replica là **bất đồng bộ (async)**. Nghĩa là sau khi write vào Master thành công, có một **khoảng thời gian ngắn** trước khi data xuất hiện trên Replica. Khoảng thời gian đó gọi là **Replication Lag**.
+
+### Tại sao Claim Check Pattern khuếch đại vấn đề?
+
+Vì write và read xảy ra **gần như ngay lập tức**:
+
+```
+t=0ms  Producer write key vào Redis Master
+t=1ms  Producer gửi Kafka message
+t=2ms  Consumer nhận message, fetch Redis → đi vào Replica
+t=?ms  Replica mới sync xong từ Master
+```
+
+Nếu replication lag là 5ms và consumer fetch ở t=2ms — bạn đọc trước khi data kịp sync. Đây là **race condition** giữa replication speed và message processing speed.
+
+---
+
+## 4. Monitor Replication Lag
+
+Trước khi fix, mình recommend kiểm tra lag thực tế trong hệ thống bằng lệnh:
+
+```bash
+redis-cli INFO replication
+```
+
+Output sẽ trông như thế này:
+
+```
+# Replication
+role:master
+connected_slaves:1
+slave0:ip=10.0.0.2,port=6379,state=online,offset=12345678,lag=1
+master_replid:abc123...
+master_repl_offset:12345699
+repl_backlog_active:1
+repl_backlog_size:1048576
+```
+
+Hai con số quan trọng:
+- **`master_repl_offset`** — vị trí write mới nhất trên Master
+- **`slave0: offset`** — Replica đang sync đến đâu
+- **`lag`** — số giây Replica đang chậm hơn Master
+
+Diff giữa `master_repl_offset` và `slave offset` (tính bằng bytes) cho bạn biết backlog đang tích lại bao nhiêu. Nếu con số này tăng liên tục, Replica đang không theo kịp Master.
+
+Nếu bạn dùng **Prometheus + redis-exporter**, metric tương ứng là:
+
+```
+redis_connected_slaves_lag_seconds
+redis_master_repl_offset - redis_connected_slaves_offset
+```
+
+Nên set alert khi lag vượt ngưỡng nhất định (ví dụ > 1s) để phát hiện sớm trước khi nó gây bug.
+
+---
+
+## 5. Fix — ReadMode.MASTER
+
+Nếu bạn dùng **Redisson** (Java Redis client), config ReadMode mặc định là `SLAVE`. Đây là nguyên nhân trực tiếp.
+
+Redisson có 3 mode:
+
+| ReadMode | Read từ đâu | Consistency | Load trên Master |
+|---|---|---|---|
+| `SLAVE` | Replica | Eventual | Thấp |
+| `MASTER_SLAVE` | Master hoặc Replica (round-robin) | Eventual (vẫn có thể đọc Replica) | Trung bình |
+| `MASTER` | Master | Strong | Cao hơn |
+
+Thử chuyển toggle bên dưới để thấy luồng request thay đổi giữa ba mode:
+
+<RedisReadMode initialMode="replica" />
+
+**Tại sao không dùng `MASTER_SLAVE`?**
+
+Vì `MASTER_SLAVE` vẫn có thể route read request đến Replica. Nghĩa là bạn vẫn có xác suất đọc stale data — chỉ giảm tần suất, không giải quyết root cause.
+
+**Fix là chuyển sang `MASTER`:**
+
+```java
+Config config = new Config();
+config.useClusterServers()
+    .addNodeAddress("redis://10.0.0.1:6379")
+    .setReadMode(ReadMode.MASTER);  // 👈 đây
+```
+
+Hoặc nếu dùng Spring Boot với `application.yml`:
+
+```yaml
+spring:
+  redis:
+    redisson:
+      config: |
+        clusterServersConfig:
+          readMode: MASTER
+```
+
+Sau khi đổi, tất cả read request đều đi thẳng vào Master — **strong consistency**, không còn replication lag window.
+
+**Trade-off cần biết:**
+- Load trên Master tăng lên vì gánh cả read lẫn write.
+- Nếu hệ thống có read-heavy traffic lớn, cần đảm bảo Master đủ capacity.
+- Trong trường hợp của mình, đây là trade-off chấp nhận được vì **correctness quan trọng hơn read scalability**.
+
+---
+
+## 6. Replica vẫn có vai trò quan trọng
+
+Sau khi chuyển sang `ReadMode.MASTER`, Replica không còn serve read traffic nữa — nhưng **đừng xóa nó đi**.
+
+Replica vẫn đóng vai trò then chốt trong **High Availability**: khi Master down, Replica được promoted lên làm Master mới, hệ thống tiếp tục hoạt động mà không mất data.
+
+Cơ chế failover này, cùng với các config liên quan như `min-replicas-to-write` và `min-replicas-max-lag`, mình sẽ chia sẻ chi tiết hơn trong bài tiếp theo về HA Redis Cluster.
+
+---
+
+## Tóm lại
+
+|  |  |
+|---|---|
+| **Pattern** | Claim Check — Consumer fetch Redis ngay sau khi nhận Kafka message |
+| **Bug** | Key not found hoặc stale data, xảy ra hiếm và không stable reproduce |
+| **Root cause** | Redis async replication tạo lag window giữa Master và Replica |
+| **Monitor** | `redis-cli INFO replication`, metric `lag` và offset diff |
+| **Fix** | Redisson `ReadMode.MASTER` — đọc thẳng từ Master |
+| **Trade-off** | Master gánh thêm read load, đổi lại strong consistency |
+
+---
+
+Nếu bạn đang gặp bug tương tự hoặc có cách handle khác (ví dụ retry với delay, hoặc dùng wait command), mình rất muốn nghe thêm trong phần comment. 🙌
