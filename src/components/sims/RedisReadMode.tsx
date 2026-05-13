@@ -8,8 +8,8 @@ import {
   EventLog,
   colors,
   motion as motionTokens,
-  DatabaseIcon,
   MonitorIcon,
+  RedisIcon,
   type LogEntry,
 } from '@site/src/components/sim-kit';
 import { motion } from 'framer-motion';
@@ -254,19 +254,19 @@ export function RedisReadMode({
               label="Redis Master"
               state={state.active === 'master' ? 'active' : 'idle'}
               sublabel="primary node · writes"
-              icon={<DatabaseIcon />}
+              icon={<RedisIcon />}
             />
             <Node
               label="Redis Replica 1"
               state={state.active === 'r1' ? 'active' : 'idle'}
               sublabel="read-only node"
-              icon={<DatabaseIcon />}
+              icon={<RedisIcon />}
             />
             <Node
               label="Redis Replica 2"
               state={state.active === 'r2' ? 'active' : 'idle'}
               sublabel="read-only node"
-              icon={<DatabaseIcon />}
+              icon={<RedisIcon />}
             />
           </div>
         </div>
