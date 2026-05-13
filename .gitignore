@@ -6,13 +6,15 @@ build/
 .docusaurus/
 .cache-loader/
 
-# Private drafts (never published, never committed)
-drafts/
+# Private drafts (never published, never committed) — but keep the directory itself
+drafts/*
+!drafts/.gitkeep
 
 # Editor / OS junk
 .DS_Store
 .idea/
 .vscode/
+.claude/
 *.swp
 *.log
 
