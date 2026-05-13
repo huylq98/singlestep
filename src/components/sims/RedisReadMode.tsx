@@ -229,12 +229,12 @@ export function RedisReadMode({
             zIndex: 1,
           }}
         >
-          {/* Left column: Client */}
+          {/* Left column: App (client) */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Node label="Client" state="idle" />
+            <Node label="App" state="idle" sublabel="your application" />
           </div>
 
-          {/* Right column: Master + Replicas stacked */}
+          {/* Right column: Redis Master + Replicas stacked */}
           <div
             style={{
               display: 'flex',
@@ -244,19 +244,19 @@ export function RedisReadMode({
             }}
           >
             <Node
-              label="Master"
+              label="Redis Master"
               state={state.active === 'master' ? 'active' : 'idle'}
-              sublabel="primary"
+              sublabel="primary node · writes"
             />
             <Node
-              label="Replica 1"
+              label="Redis Replica 1"
               state={state.active === 'r1' ? 'active' : 'idle'}
-              sublabel="read replica"
+              sublabel="read-only node"
             />
             <Node
-              label="Replica 2"
+              label="Redis Replica 2"
               state={state.active === 'r2' ? 'active' : 'idle'}
-              sublabel="read replica"
+              sublabel="read-only node"
             />
           </div>
         </div>

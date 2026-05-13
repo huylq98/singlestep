@@ -9,9 +9,10 @@ describe('<RedisReadMode>', () => {
 
   it('renders the master and both replicas with mode toggle', () => {
     render(<RedisReadMode initialMode="master" />);
-    expect(screen.getByText('Master')).toBeInTheDocument();
-    expect(screen.getByText('Replica 1')).toBeInTheDocument();
-    expect(screen.getByText('Replica 2')).toBeInTheDocument();
+    expect(screen.getByText('Redis Master')).toBeInTheDocument();
+    expect(screen.getByText('Redis Replica 1')).toBeInTheDocument();
+    expect(screen.getByText('Redis Replica 2')).toBeInTheDocument();
+    expect(screen.getByText('App')).toBeInTheDocument();
     expect(screen.getByRole('radiogroup', { name: /read mode/i })).toBeInTheDocument();
   });
 

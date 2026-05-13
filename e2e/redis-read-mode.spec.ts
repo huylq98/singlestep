@@ -11,7 +11,7 @@ test.describe('RedisReadMode sim — landing page embed', () => {
     if (!stageBox) throw new Error('stage has no bounding box');
 
     // Every node must be (a) visible, and (b) fully inside the stage's bounding box.
-    for (const label of ['Client', 'Master', 'Replica 1', 'Replica 2']) {
+    for (const label of ['App', 'Redis Master', 'Redis Replica 1', 'Redis Replica 2']) {
       const node = page.getByText(label, { exact: true }).first();
       await expect(node).toBeVisible();
       const box = await node.boundingBox();
@@ -27,7 +27,7 @@ test.describe('RedisReadMode sim — landing page embed', () => {
   test('nodes do not visually overlap each other', async ({ page }) => {
     await page.goto('/singlestep/');
 
-    const labels = ['Client', 'Master', 'Replica 1', 'Replica 2'];
+    const labels = ['App', 'Redis Master', 'Redis Replica 1', 'Redis Replica 2'];
     const boxes = await Promise.all(
       labels.map(async (l) => {
         const node = page.getByText(l, { exact: true }).first();
