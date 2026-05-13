@@ -15,7 +15,10 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "new": "node scripts/new.mjs"
+    "new": "node scripts/new.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.1",
@@ -35,6 +38,7 @@
     "@docusaurus/module-type-aliases": "^3.10.1",
     "@docusaurus/tsconfig": "^3.10.1",
     "@docusaurus/types": "^3.10.1",
+    "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
